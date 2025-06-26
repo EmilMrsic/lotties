@@ -113,6 +113,8 @@ npm install
 npm run dev
 ```
 
+Set the `OPENAI_API_KEY` environment variable to enable AI features.
+
 Visit `http://localhost:3000`
 
 ---
