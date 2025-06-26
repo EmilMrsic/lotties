@@ -224,6 +224,7 @@ export default function Home() {
             <button onClick={handleExport} className="px-3 py-1 bg-blue-500 text-white rounded">Export</button>
             <button onClick={handleExportAll} className="px-3 py-1 bg-blue-500 text-white rounded">Export All</button>
           </div>
+
           {animationData && (
             <div className="mt-4 w-full space-y-2">
               <div className="grid grid-cols-2 gap-2">
@@ -267,6 +268,7 @@ export default function Home() {
               </div>
             </div>
           )}
+
           <div className="mt-6 flex gap-2 w-full">
             <input
               value={prompt}

@@ -5,6 +5,7 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 export async function POST(req: NextRequest) {
   const { prompt, animation } = await req.json();
+
   const completion = await openai.chat.completions.create({
     model: 'gpt-4o',
     temperature: 0,
@@ -13,8 +14,7 @@ export async function POST(req: NextRequest) {
       {
         role: 'system',
         content:
-          'You are a helpful assistant that edits Lottie JSON according to instructions.' +
-          ' Respond ONLY with the updated JSON object.',
+          'You are a helpful assistant that edits Lottie JSON according to instructions. Respond ONLY with the updated JSON object.',
       },
       {
         role: 'user',
