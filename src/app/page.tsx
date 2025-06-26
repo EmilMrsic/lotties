@@ -9,6 +9,9 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [prompt, setPrompt] = useState('');
   const [unsaved, setUnsaved] = useState(false);
+  const [width, setWidth] = useState(0);
+  const [height, setHeight] = useState(0);
+  const [color, setColor] = useState('#ffffff');
   const [savedAnimations, setSavedAnimations] = useState<
     { id: string; name: string; data: any }[]
   >([]);
@@ -24,6 +27,13 @@ export default function Home() {
   useEffect(() => {
     localforage.setItem('animations', savedAnimations);
   }, [savedAnimations]);
+
+  useEffect(() => {
+    if (animationData) {
+      setWidth(animationData.w);
+      setHeight(animationData.h);
+    }
+  }, [animationData]);
 
   useEffect(() => {
     const handler = (e: BeforeUnloadEvent) => {
@@ -118,6 +128,37 @@ export default function Home() {
     URL.revokeObjectURL(url);
   };
 
+  const applyDimensions = () => {
+    if (!animationData) return;
+    setAnimationData({ ...animationData, w: width, h: height });
+    setUnsaved(true);
+  };
+
+  const hexToRgb = (hex: string) => {
+    const bigint = parseInt(hex.replace('#', ''), 16);
+    const r = (bigint >> 16) & 255;
+    const g = (bigint >> 8) & 255;
+    const b = bigint & 255;
+    return [r, g, b];
+  };
+
+  const applyColor = () => {
+    if (!animationData) return;
+    const [r, g, b] = hexToRgb(color);
+    const updated = JSON.parse(JSON.stringify(animationData));
+    updated.layers?.forEach((layer: any) => {
+      layer.shapes?.forEach((shape: any) => {
+        shape.it?.forEach((it: any) => {
+          if (it.c && Array.isArray(it.c.k)) {
+            it.c.k = [r / 255, g / 255, b / 255, 1];
+          }
+        });
+      });
+    });
+    setAnimationData(updated);
+    setUnsaved(true);
+  };
+
   const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -141,6 +182,7 @@ export default function Home() {
   const handleGenerate = async () => {
     const res = await fetch('/api/generate', {
       method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ prompt }),
     });
     const data = await res.json();
@@ -152,6 +194,7 @@ export default function Home() {
     if (!animationData) return;
     const res = await fetch('/api/edit', {
       method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ prompt, animation: animationData }),
     });
     const data = await res.json();
@@ -181,6 +224,51 @@ export default function Home() {
             <button onClick={handleExport} className="px-3 py-1 bg-blue-500 text-white rounded">Export</button>
             <button onClick={handleExportAll} className="px-3 py-1 bg-blue-500 text-white rounded">Export All</button>
           </div>
+
+          {animationData && (
+            <div className="mt-4 w-full space-y-2">
+              <div className="grid grid-cols-2 gap-2">
+                <label className="flex flex-col text-sm">
+                  Width
+                  <input
+                    type="number"
+                    value={width}
+                    onChange={(e) => setWidth(parseInt(e.target.value) || 0)}
+                    className="border rounded px-2 py-1"
+                  />
+                </label>
+                <label className="flex flex-col text-sm">
+                  Height
+                  <input
+                    type="number"
+                    value={height}
+                    onChange={(e) => setHeight(parseInt(e.target.value) || 0)}
+                    className="border rounded px-2 py-1"
+                  />
+                </label>
+                <button
+                  onClick={applyDimensions}
+                  className="col-span-2 px-3 py-1 bg-blue-600 text-white rounded"
+                >
+                  Apply Size
+                </button>
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  value={color}
+                  onChange={(e) => setColor(e.target.value)}
+                />
+                <button
+                  onClick={applyColor}
+                  className="px-3 py-1 bg-blue-600 text-white rounded"
+                >
+                  Apply Color
+                </button>
+              </div>
+            </div>
+          )}
+
           <div className="mt-6 flex gap-2 w-full">
             <input
               value={prompt}
