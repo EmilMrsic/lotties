@@ -12,6 +12,7 @@ export default function Home() {
   const [width, setWidth] = useState(0);
   const [height, setHeight] = useState(0);
   const [color, setColor] = useState('#ffffff');
+  const [selectedLayers, setSelectedLayers] = useState<number[]>([]);
   const [savedAnimations, setSavedAnimations] = useState<
     { id: string; name: string; data: any }[]
   >([]);
@@ -32,6 +33,8 @@ export default function Home() {
     if (animationData) {
       setWidth(animationData.w);
       setHeight(animationData.h);
+      const layers = animationData.layers || [];
+      setSelectedLayers(layers.map((_: any, i: number) => i));
     }
   }, [animationData]);
 
@@ -142,11 +145,18 @@ export default function Home() {
     return [r, g, b];
   };
 
+  const toggleLayer = (idx: number) => {
+    setSelectedLayers((prev) =>
+      prev.includes(idx) ? prev.filter((i) => i !== idx) : [...prev, idx]
+    );
+  };
+
   const applyColor = () => {
     if (!animationData) return;
     const [r, g, b] = hexToRgb(color);
     const updated = JSON.parse(JSON.stringify(animationData));
-    updated.layers?.forEach((layer: any) => {
+    updated.layers?.forEach((layer: any, idx: number) => {
+      if (!selectedLayers.includes(idx)) return;
       layer.shapes?.forEach((shape: any) => {
         shape.it?.forEach((it: any) => {
           if (it.c && Array.isArray(it.c.k)) {
@@ -180,24 +190,34 @@ export default function Home() {
   };
 
   const handleGenerate = async () => {
+    setError(null);
     const res = await fetch('/api/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ prompt }),
     });
     const data = await res.json();
+    if (!res.ok) {
+      setError(data.error || 'Failed to generate animation');
+      return;
+    }
     setAnimationData(data);
     setUnsaved(true);
   };
 
   const handleEdit = async () => {
     if (!animationData) return;
+    setError(null);
     const res = await fetch('/api/edit', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ prompt, animation: animationData }),
     });
     const data = await res.json();
+    if (!res.ok) {
+      setError(data.error || 'Failed to edit animation');
+      return;
+    }
     setAnimationData(data);
     setUnsaved(true);
   };
@@ -224,24 +244,42 @@ export default function Home() {
             <button onClick={handleExport} className="px-3 py-1 bg-blue-500 text-white rounded">Export</button>
             <button onClick={handleExportAll} className="px-3 py-1 bg-blue-500 text-white rounded">Export All</button>
           </div>
-
-          {animationData && (
-            <div className="mt-4 w-full space-y-2">
-              <div className="grid grid-cols-2 gap-2">
-                <label className="flex flex-col text-sm">
-                  Width
+                  Width: {width}
+                    type="range"
+                    min="50"
+                    max="1000"
+                    step="10"
+                  Height: {height}
+                    type="range"
+                    min="50"
+                    max="1000"
+                    step="10"
+              <div className="space-y-2">
+                <div className="grid grid-cols-2 gap-2">
+                  {animationData.layers?.map((layer: any, idx: number) => (
+                    <label key={idx} className="flex items-center gap-1 text-sm">
+                      <input
+                        type="checkbox"
+                        checked={selectedLayers.includes(idx)}
+                        onChange={() => toggleLayer(idx)}
+                      />
+                      {layer.nm || `Layer ${idx + 1}`}
+                    </label>
+                  ))}
+                </div>
+                <div className="flex items-center gap-2">
                   <input
-                    type="number"
-                    value={width}
-                    onChange={(e) => setWidth(parseInt(e.target.value) || 0)}
-                    className="border rounded px-2 py-1"
+                    type="color"
+                    value={color}
+                    onChange={(e) => setColor(e.target.value)}
                   />
-                </label>
-                <label className="flex flex-col text-sm">
-                  Height
-                  <input
-                    type="number"
-                    value={height}
+                  <button
+                    onClick={applyColor}
+                    className="px-3 py-1 bg-blue-600 text-white rounded"
+                  >
+                    Apply Color
+                  </button>
+                </div>
                     onChange={(e) => setHeight(parseInt(e.target.value) || 0)}
                     className="border rounded px-2 py-1"
                   />

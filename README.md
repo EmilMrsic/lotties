@@ -49,7 +49,7 @@ A local-only, no-login Lottie animation creation and editing tool powered by Nex
 - Save, load, delete animations from local storage
 - Export/import `.json` files
 - Unload warning if unsaved changes exist
-- Basic UI editing panel for size and color
+- Size slider and layer-specific color editing
 
 ---
 
